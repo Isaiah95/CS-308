@@ -24,7 +24,7 @@ def pad_iv(iv):
         return iv[:16]
     elif len(iv) < 16:
         padding_length = 16 - len(iv)
-        return iv + bytes(padding_length)
+        return iv + bytes([padding_length] * padding_length)
     else:
         return iv
 
@@ -81,8 +81,13 @@ def main():
             else:
                 key = input("Enter the encryption key: ").encode()
                 aes = pyaes.AESModeOfOperationCTR(key)
-
-            ciphertext = aes.encrypt(padded_message)
+            
+            ciphertext = b''  # Initialize the ciphertext as a byte string
+            
+            for i in range(0, len(padded_message), 16):
+                block = padded_message[i:i+16]
+                encrypted_block = aes.encrypt(block)
+                ciphertext += encrypted_block
 
             # Write encrypted message to a new file
             write_file(args.output, ciphertext)
@@ -108,8 +113,14 @@ def main():
             else:
                 aes = pyaes.AESModeOfOperationCTR(key)
 
-            decrypted_padded = aes.decrypt(ciphertext)
-            decrypted_message = unpad(decrypted_padded)
+            decrypted_message = b''  # Initialize the decrypted message as a byte string
+            
+            for i in range(0, len(ciphertext), 16):
+                block = ciphertext[i:i+16]
+                decrypted_block = aes.decrypt(block)
+                decrypted_message += decrypted_block
+
+            decrypted_message = unpad(decrypted_message)
 
             # Write decrypted message to a new file
             write_file(args.output, decrypted_message)
